@@ -15,6 +15,7 @@ interface CliOptions {
   dpi: string;
   fit: string;
   crop: boolean; // --no-crop sets this to false
+  labelSize: string;
 }
 
 const program = new Command();
@@ -22,7 +23,7 @@ const program = new Command();
 program
   .name("label-resize-print")
   .description(
-    "Resize shipping labels to 4×6 and output a 2-up landscape letter PDF.",
+    "Resize shipping labels and output a 2-up landscape letter PDF.",
   )
   .argument(
     "<input>",
@@ -44,6 +45,11 @@ program
     "--no-crop",
     "Disable automatic cropping to the label's black border",
   )
+  .option(
+    "-s, --label-size <size>",
+    "Label size: 4x6 | 4x8 (default: 4x6)",
+    "4x6",
+  )
   .action(
     async (
       input: string,
@@ -58,6 +64,7 @@ program
           dpi: parseInt(opts.dpi, 10),
           fitMode: opts.fit as FitMode,
           autoCrop: opts.crop,
+          labelSize: opts.labelSize,
         });
         console.log(`Label saved to: ${output}`);
       } catch (err: unknown) {

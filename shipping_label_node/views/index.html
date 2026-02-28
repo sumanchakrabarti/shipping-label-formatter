@@ -238,7 +238,7 @@
 <body>
     <div class="container">
         <h1>📦 Label Resize & Print</h1>
-        <p class="subtitle">Two 4×6 labels on one 8.5×11 landscape page</p>
+        <p class="subtitle">Two labels on one 8.5×11 landscape page</p>
 
         <!-- Two drop zones side by side -->
         <div class="drop-zones">
@@ -269,6 +269,14 @@
         <!-- Options -->
         <div class="options">
             <div class="option-row">
+                <label for="labelSizeSelect">Label Size</label>
+                <select id="labelSizeSelect">
+                    <option value="4x6" selected>4×6 inches</option>
+                    <option value="4x8">4×8 inches</option>
+                </select>
+            </div>
+
+            <div class="option-row">
                 <label for="fitSelect">Fit Mode</label>
                 <select id="fitSelect">
                     <option value="fit" selected>Fit (white margins)</option>
@@ -283,10 +291,6 @@
                        style="width:auto; accent-color:#2563eb; transform:scale(1.3)">
             </div>
 
-            <div class="option-row">
-                <label for="dpiInput">DPI</label>
-                <input type="number" id="dpiInput" value="300" min="72" max="600">
-            </div>
         </div>
 
         <button class="btn btn-primary" id="resizeBtn" disabled>
@@ -296,6 +300,28 @@
         <div class="status" id="status"></div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.9.155/pdf.min.mjs" type="module"></script>
+    <script type="module">
+        import * as pdfjsLib from 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.9.155/pdf.min.mjs';
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.9.155/pdf.worker.min.mjs';
+
+        async function renderPdfPreview(file) {
+            const arrayBuf = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuf }).promise;
+            const page = await pdf.getPage(1);
+            const viewport = page.getViewport({ scale: 1 });
+            const scale = Math.min(300 / viewport.width, 300 / viewport.height, 2);
+            const scaledViewport = page.getViewport({ scale });
+            const canvas = document.createElement('canvas');
+            canvas.width = scaledViewport.width;
+            canvas.height = scaledViewport.height;
+            const ctx = canvas.getContext('2d');
+            await page.render({ canvasContext: ctx, viewport: scaledViewport }).promise;
+            return canvas.toDataURL('image/png');
+        }
+
+        window.renderPdfPreview = renderPdfPreview;
+    </script>
     <script>
         // Register service worker for PWA / iOS home screen support
         if ('serviceWorker' in navigator) {
@@ -338,7 +364,14 @@
                 // Preview in slot
                 const ext = f.name.split('.').pop().toLowerCase();
                 slot.classList.add('filled');
-                if (ext !== 'pdf') {
+                if (ext === 'pdf' && window.renderPdfPreview) {
+                    slot.textContent = '⏳';
+                    window.renderPdfPreview(f).then((dataUrl) => {
+                        slot.innerHTML = `<img src="${dataUrl}" alt="preview">`;
+                    }).catch(() => {
+                        slot.textContent = '📄 PDF';
+                    });
+                } else if (ext !== 'pdf') {
                     const reader = new FileReader();
                     reader.onload = (e) => {
                         slot.innerHTML = `<img src="${e.target.result}" alt="preview">`;
@@ -353,6 +386,13 @@
         setupDropZone('dropZone1', 'fileInput1', 'fileName1', 'slot1', (f) => { file1 = f; });
         setupDropZone('dropZone2', 'fileInput2', 'fileName2', 'slot2', (f) => { file2 = f; });
 
+        // Update slot aspect ratio when label size changes
+        document.getElementById('labelSizeSelect').addEventListener('change', (e) => {
+            const [w, h] = e.target.value.split('x').map(Number);
+            document.getElementById('slot1').style.aspectRatio = `${w} / ${h}`;
+            document.getElementById('slot2').style.aspectRatio = `${w} / ${h}`;
+        });
+
         // Resize & download
         document.getElementById('resizeBtn').addEventListener('click', async () => {
             if (!file1) return;
@@ -361,9 +401,9 @@
             formData.append('file', file1);
             if (file2) formData.append('file2', file2);
 
-            formData.append('dpi', document.getElementById('dpiInput').value);
             formData.append('fit', document.getElementById('fitSelect').value);
             formData.append('auto_crop', document.getElementById('autoCropCheck').checked ? 'true' : 'false');
+            formData.append('label_size', document.getElementById('labelSizeSelect').value);
 
             const btn = document.getElementById('resizeBtn');
             const statusEl = document.getElementById('status');

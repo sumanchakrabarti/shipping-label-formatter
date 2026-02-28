@@ -24,6 +24,7 @@ export interface ResizeLabelOptions {
   dpi?: number;
   fitMode?: FitMode;
   autoCrop?: boolean;
+  labelSize?: string;
 }
 
 export interface ResizeLabelFromBuffersOptions {
@@ -34,6 +35,7 @@ export interface ResizeLabelFromBuffersOptions {
   dpi?: number;
   fitMode?: FitMode;
   autoCrop?: boolean;
+  labelSize?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -68,8 +70,6 @@ export const SUPPORTED_EXTS: ReadonlySet<string> = new Set([
 // Landscape US letter page dimensions (inches)
 const PAGE_WIDTH_IN = 11.0;
 const PAGE_HEIGHT_IN = 8.5;
-const LABEL_W_IN = 4.0;
-const LABEL_H_IN = 6.0;
 const PTS_PER_INCH = 72;
 
 // ---------------------------------------------------------------------------
@@ -306,11 +306,14 @@ export async function resizeImage(
 // ---------------------------------------------------------------------------
 
 /** Embed images into a landscape-letter PDF page, returning the PDF bytes. */
-async function buildPdf2Up(images: Buffer[]): Promise<Uint8Array> {
+async function buildPdf2Up(
+  images: Buffer[],
+  labelSize: [number, number] = [4, 6],
+): Promise<Uint8Array> {
   const pageW = PAGE_WIDTH_IN * PTS_PER_INCH; // 792
   const pageH = PAGE_HEIGHT_IN * PTS_PER_INCH; // 612
-  const labelW = LABEL_W_IN * PTS_PER_INCH; // 288
-  const labelH = LABEL_H_IN * PTS_PER_INCH; // 432
+  const labelW = labelSize[0] * PTS_PER_INCH;
+  const labelH = labelSize[1] * PTS_PER_INCH;
   const halfW = pageW / 2;
 
   const pdfDoc = await PDFDocument.create();
@@ -336,8 +339,9 @@ async function buildPdf2Up(images: Buffer[]): Promise<Uint8Array> {
 export async function savePdf2Up(
   images: Buffer[],
   outputPath: string,
+  labelSize: [number, number] = [4, 6],
 ): Promise<void> {
-  const pdfBytes = await buildPdf2Up(images);
+  const pdfBytes = await buildPdf2Up(images, labelSize);
   fs.writeFileSync(outputPath, pdfBytes);
 }
 
@@ -351,12 +355,13 @@ async function prepareLabel(
   dpi: number = DEFAULT_DPI,
   fitMode: FitMode = "fit",
   autoCrop: boolean = true,
+  labelSize: [number, number] = [4, 6],
 ): Promise<Buffer> {
   let buf = await loadImage(inputPath);
   if (autoCrop) {
     buf = await autoCropLabel(buf);
   }
-  return resizeImage(buf, [LABEL_W_IN, LABEL_H_IN], dpi, fitMode);
+  return resizeImage(buf, labelSize, dpi, fitMode);
 }
 
 /**
@@ -371,6 +376,7 @@ export async function resizeLabel({
   dpi = DEFAULT_DPI,
   fitMode = "fit",
   autoCrop = true,
+  labelSize: labelSizeKey = DEFAULT_LABEL_SIZE,
 }: ResizeLabelOptions): Promise<string> {
   if (!fs.existsSync(inputPath)) {
     throw new Error(`Input file not found: ${inputPath}`);
@@ -379,19 +385,21 @@ export async function resizeLabel({
     throw new Error(`Second input file not found: ${inputPath2}`);
   }
 
+  const size = LABEL_SIZES[labelSizeKey] ?? LABEL_SIZES[DEFAULT_LABEL_SIZE];
+
   if (!outputPath) {
     const base = inputPath.replace(/\.[^.]+$/, "");
     outputPath = `${base}_label.pdf`;
   }
 
   const labels: Buffer[] = [
-    await prepareLabel(inputPath, dpi, fitMode, autoCrop),
+    await prepareLabel(inputPath, dpi, fitMode, autoCrop, size),
   ];
   if (inputPath2) {
-    labels.push(await prepareLabel(inputPath2, dpi, fitMode, autoCrop));
+    labels.push(await prepareLabel(inputPath2, dpi, fitMode, autoCrop, size));
   }
 
-  await savePdf2Up(labels, outputPath);
+  await savePdf2Up(labels, outputPath, size);
   return outputPath;
 }
 
@@ -408,7 +416,10 @@ export async function resizeLabelFromBuffers({
   dpi = DEFAULT_DPI,
   fitMode = "fit",
   autoCrop = true,
+  labelSize: labelSizeKey = DEFAULT_LABEL_SIZE,
 }: ResizeLabelFromBuffersOptions): Promise<Buffer> {
+  const size = LABEL_SIZES[labelSizeKey] ?? LABEL_SIZES[DEFAULT_LABEL_SIZE];
+
   async function bufToImage(buf: Buffer, ext: string): Promise<Buffer> {
     if (SUPPORTED_PDF_EXTS.has(ext)) {
       const tmp = path.join(os.tmpdir(), `label_${Date.now()}${ext}`);
@@ -425,7 +436,7 @@ export async function resizeLabelFromBuffers({
   async function prepare(buf: Buffer, ext: string): Promise<Buffer> {
     let img = await bufToImage(buf, ext);
     if (autoCrop) img = await autoCropLabel(img);
-    return resizeImage(img, [LABEL_W_IN, LABEL_H_IN], dpi, fitMode);
+    return resizeImage(img, size, dpi, fitMode);
   }
 
   const labels: Buffer[] = [await prepare(buffer1, ext1)];
@@ -433,6 +444,6 @@ export async function resizeLabelFromBuffers({
     labels.push(await prepare(buffer2, ext2));
   }
 
-  const pdfBytes = await buildPdf2Up(labels);
+  const pdfBytes = await buildPdf2Up(labels, size);
   return Buffer.from(pdfBytes);
 }

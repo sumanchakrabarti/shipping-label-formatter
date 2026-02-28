@@ -233,14 +233,13 @@ def save_pdf(img: Image.Image, output_path: str, label_size: tuple[float, float]
 # Landscape letter page: 11" wide × 8.5" tall (standard US letter rotated)
 PAGE_WIDTH_IN = 11.0
 PAGE_HEIGHT_IN = 8.5
-LABEL_W_IN = 4.0
-LABEL_H_IN = 6.0
 
 
 def save_pdf_2up(
     images: list[Image.Image],
     output_path: str,
     dpi: int = DEFAULT_DPI,
+    label_size: tuple[float, float] = (4.0, 6.0),
 ):
     """Save one or two label images onto a landscape letter page, side by side.
 
@@ -252,11 +251,12 @@ def save_pdf_2up(
         images: List of 1 or 2 resized label PIL Images.
         output_path: Destination file path for the PDF.
         dpi: Resolution used for the images.
+        label_size: Label dimensions in inches (width, height).
     """
     page_w = PAGE_WIDTH_IN * inch
     page_h = PAGE_HEIGHT_IN * inch
-    label_w = LABEL_W_IN * inch
-    label_h = LABEL_H_IN * inch
+    label_w = label_size[0] * inch
+    label_h = label_size[1] * inch
 
     half_w = page_w / 2
 
@@ -291,12 +291,13 @@ def _prepare_label(
     fit_mode: str = "fit",
     auto_crop: bool = True,
     page_num: int = 0,
+    label_size: tuple[float, float] = (4.0, 6.0),
 ) -> Image.Image:
     """Load, auto-crop, and resize a single label image."""
     img = load_image(input_path)
     if auto_crop:
         img = auto_crop_label(img)
-    return resize_image(img, (LABEL_W_IN, LABEL_H_IN), dpi=dpi, fit_mode=fit_mode)
+    return resize_image(img, label_size, dpi=dpi, fit_mode=fit_mode)
 
 
 def resize_label(
@@ -307,9 +308,10 @@ def resize_label(
     fit_mode: str = "fit",
     page_num: int = 0,
     auto_crop: bool = True,
+    label_size: str = DEFAULT_LABEL_SIZE,
     **_ignored,
 ) -> str:
-    """Load one or two shipping labels, resize to 4x6, and save as a 2-up
+    """Load one or two shipping labels, resize, and save as a 2-up
     landscape letter PDF (11 × 8.5 in) with labels side by side.
 
     Args:
@@ -320,6 +322,7 @@ def resize_label(
         fit_mode: Resize strategy — 'fit', 'fill', or 'stretch'.
         page_num: For PDF inputs, which page to extract (0-indexed).
         auto_crop: If True, detect and crop to the label's black border.
+        label_size: Label size key (e.g. '4x6', '4x8').
 
     Returns:
         Path to the generated output PDF.
@@ -329,15 +332,17 @@ def resize_label(
     if input_path_2 and not os.path.isfile(input_path_2):
         raise FileNotFoundError(f"Second input file not found: {input_path_2}")
 
+    size = LABEL_SIZES.get(label_size, LABEL_SIZES[DEFAULT_LABEL_SIZE])
+
     # Default output path
     if output_path is None:
         base = os.path.splitext(input_path)[0]
         output_path = f"{base}_label.pdf"
 
     # Prepare label(s)
-    labels = [_prepare_label(input_path, dpi, fit_mode, auto_crop, page_num)]
+    labels = [_prepare_label(input_path, dpi, fit_mode, auto_crop, page_num, label_size=size)]
     if input_path_2:
-        labels.append(_prepare_label(input_path_2, dpi, fit_mode, auto_crop, page_num))
+        labels.append(_prepare_label(input_path_2, dpi, fit_mode, auto_crop, page_num, label_size=size))
 
-    save_pdf_2up(labels, output_path, dpi=dpi)
+    save_pdf_2up(labels, output_path, dpi=dpi, label_size=size)
     return output_path

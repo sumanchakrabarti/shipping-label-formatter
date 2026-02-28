@@ -80,6 +80,7 @@ app.post("/resize", uploadFields, async (req: Request, res: Response) => {
     const fitMode = (req.body.fit as string) ?? "fit";
     const autoCrop =
       ((req.body.auto_crop as string) ?? "true").toLowerCase() === "true";
+    const labelSize = (req.body.label_size as string) ?? "4x6";
 
     // Optional second file
     let buffer2: Buffer | undefined;
@@ -100,6 +101,7 @@ app.post("/resize", uploadFields, async (req: Request, res: Response) => {
       dpi,
       fitMode: fitMode as "fit" | "fill" | "stretch",
       autoCrop,
+      labelSize,
     });
 
     const baseName = file1.originalname.replace(/\.[^.]+$/, "");

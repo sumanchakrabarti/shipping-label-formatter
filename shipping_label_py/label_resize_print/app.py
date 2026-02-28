@@ -42,6 +42,7 @@ def resize():
     fit_mode = request.form.get("fit", "fit")
     page_num = int(request.form.get("page", 0))
     auto_crop = request.form.get("auto_crop", "true").lower() == "true"
+    label_size = request.form.get("label_size", "4x6")
 
     tmp_dir = tempfile.mkdtemp()
     input_path = os.path.join(tmp_dir, f"input{ext}")
@@ -66,6 +67,7 @@ def resize():
             fit_mode=fit_mode,
             page_num=page_num,
             auto_crop=auto_crop,
+            label_size=label_size,
         )
 
         base_name = os.path.splitext(file.filename)[0]
