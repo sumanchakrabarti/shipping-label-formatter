@@ -11,3 +11,6 @@ I've gotten sick of printing an entire sheet of paper for a shipping label and I
 
 ## Why the different languages?
 Pick your poison to start from. They're all the same, though the Swift app is more challenging to test.
+
+> [!NOTE]
+> Use the NodeJS or Python app
