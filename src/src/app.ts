@@ -1,12 +1,11 @@
 /**
  * Express web application for label resizing.
- *
- * Node.js port of shipping_label_py/label_resize_print/app.py
  */
 
 import express, { type Request, type Response } from "express";
 import multer from "multer";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 import {
   SUPPORTED_EXTS,
@@ -23,17 +22,12 @@ const upload = multer({
   limits: { fileSize: 50 * 1024 * 1024 },
 });
 
-// Serve static assets (sw.js, icons, manifest)
+// Serve static assets (sw.js, icons)
 app.use("/static", express.static(path.join(__dirname, "..", "public")));
-app.use("/public", express.static(path.join(__dirname, "..", "public")));
 
 // ---------------------------------------------------------------------------
-// Routes
+// API Routes
 // ---------------------------------------------------------------------------
-
-app.get("/", (_req: Request, res: Response) => {
-  res.sendFile(path.join(__dirname, "..", "views", "index.html"));
-});
 
 app.get("/manifest.json", (_req: Request, res: Response) => {
   res.json({
@@ -50,7 +44,6 @@ app.get("/manifest.json", (_req: Request, res: Response) => {
   });
 });
 
-// Multer populates req.files as Record<string, Express.Multer.File[]>
 const uploadFields = upload.fields([
   { name: "file", maxCount: 1 },
   { name: "file2", maxCount: 1 },
@@ -82,7 +75,6 @@ app.post("/resize", uploadFields, async (req: Request, res: Response) => {
       ((req.body.auto_crop as string) ?? "true").toLowerCase() === "true";
     const labelSize = (req.body.label_size as string) ?? "4x6";
 
-    // Optional second file
     let buffer2: Buffer | undefined;
     let ext2: string | undefined;
     const file2 = files.file2?.[0];
@@ -122,6 +114,19 @@ app.post("/resize", uploadFields, async (req: Request, res: Response) => {
     res.status(status).json({ error: message });
   }
 });
+
+// ---------------------------------------------------------------------------
+// Serve React build (production) or fallback HTML (dev without Vite)
+// ---------------------------------------------------------------------------
+
+const clientDist = path.join(__dirname, "..", "client", "dist");
+
+if (fs.existsSync(path.join(clientDist, "index.html"))) {
+  app.use(express.static(clientDist));
+  app.get("*", (_req: Request, res: Response) => {
+    res.sendFile(path.join(clientDist, "index.html"));
+  });
+}
 
 // ---------------------------------------------------------------------------
 // Start

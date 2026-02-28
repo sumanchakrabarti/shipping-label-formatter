@@ -4,22 +4,19 @@
   "description": "Shipping label formatter – resize, auto-crop, and generate 2-up landscape letter PDFs",
   "type": "module",
   "main": "dist/app.js",
-  "bin": {
-    "label-resize-print": "dist/cli.js"
-  },
   "scripts": {
-    "build": "tsc && tsc -p client/tsconfig.json",
+    "build": "tsc && cd client && npx vite build",
     "build:server": "tsc",
-    "build:client": "tsc -p client/tsconfig.json",
+    "build:client": "cd client && npx vite build",
     "start": "tsx src/app.ts",
-    "dev": "tsx --watch src/app.ts",
+    "dev": "concurrently \"tsx --watch src/app.ts\" \"cd client && npx vite\"",
+    "dev:server": "tsx --watch src/app.ts",
+    "dev:client": "cd client && npx vite",
     "debug": "node --inspect --import tsx/esm src/app.ts",
-    "cli": "tsx src/cli.ts",
     "typecheck": "tsc --noEmit && tsc -p client/tsconfig.json --noEmit",
     "generate-icons": "node scripts/generate-icons.js"
   },
   "dependencies": {
-    "commander": "^12.0.0",
     "express": "^4.21.0",
     "multer": "^1.4.5-lts.1",
     "mupdf": "^1.27.0",
@@ -30,7 +27,15 @@
     "@types/express": "^5.0.0",
     "@types/multer": "^1.4.12",
     "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.0.0",
+    "concurrently": "^9.0.0",
+    "pdfjs-dist": "^4.9.155",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
     "tsx": "^4.0.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vite": "^6.0.0"
   }
 }

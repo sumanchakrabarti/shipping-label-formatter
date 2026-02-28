@@ -3,6 +3,5 @@ dist/
 package-lock.json
 *.tsbuildinfo
 
-# Compiled client-side JS (built from client/main.ts)
-public/main.js
-public/main.js.map
+# React build output
+client/dist/

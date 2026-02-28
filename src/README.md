@@ -9,7 +9,7 @@ A Node.js/TypeScript port of the Python shipping label formatter. Takes shipping
 - **Auto-crop** — detects the black border rectangle and crops to it (8 px outward padding)
 - **2-up layout** — places 1 or 2 labels side-by-side on a landscape letter page
 - **Fit modes** — Fit (white margins), Fill (crop excess), or Stretch
-- **PDF input** — rasterises PDF labels via MuPDF (WASM)
+- **PDF input** — renders PDF labels via MuPDF (WASM)
 - **PWA** — installable on iOS/Android home screens
 - **Full TypeScript** — strict mode, exported types, declaration files
 
