@@ -36,6 +36,7 @@ h1 {
 
 .drop-zone {
     flex: 1;
+    position: relative;
     border: 2px dashed #93c5fd;
     border-radius: 12px;
     background: #fff;
@@ -95,15 +96,28 @@ h1 {
 }
 
 .clear-btn {
-    display: inline-block;
-    margin-top: 0.4rem;
-    font-size: 0.75rem;
-    color: #dc2626;
-    background: none;
+    display: none;
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
     border: none;
+    background: #ef4444;
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 700;
+    line-height: 1;
     cursor: pointer;
-    text-decoration: underline;
+    z-index: 2;
+    padding: 0;
+    transition: background 0.15s;
 }
+
+.clear-btn:hover { background: #dc2626; }
+
+.drop-zone.has-file .clear-btn { display: block; }
 
 /* Page layout preview */
 .page-preview {
@@ -195,6 +209,24 @@ h1 {
     padding: 0 1.25rem 1rem;
 }
 
+.settings-reset-btn {
+    display: block;
+    margin: 0.75rem auto 0;
+    padding: 0.35rem 1rem;
+    font-size: 0.75rem;
+    color: #64748b;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.settings-reset-btn:hover {
+    color: #1e293b;
+    background: #e2e8f0;
+}
+
 .option-row {
     display: flex;
     align-items: center;
@@ -219,6 +251,12 @@ h1 {
     background: #f8fafc;
     color: #1e293b;
     width: 140px;
+}
+
+.option-row input[type="checkbox"] {
+    width: auto;
+    accent-color: #2563eb;
+    transform: scale(1.3);
 }
 
 /* Buttons */

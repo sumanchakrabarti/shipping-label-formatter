@@ -8,12 +8,14 @@
     "label-resize-print": "dist/cli.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && tsc -p client/tsconfig.json",
+    "build:server": "tsc",
+    "build:client": "tsc -p client/tsconfig.json",
     "start": "tsx src/app.ts",
     "dev": "tsx --watch src/app.ts",
     "debug": "node --inspect --import tsx/esm src/app.ts",
     "cli": "tsx src/cli.ts",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc -p client/tsconfig.json --noEmit",
     "generate-icons": "node scripts/generate-icons.js"
   },
   "dependencies": {
