@@ -16,26 +16,39 @@ A Node.js/TypeScript port of the Python shipping label formatter. Takes shipping
 ## Quick Start
 
 ```bash
-npm install
-npm start          # starts web server on http://localhost:5000
-npm run dev        # starts with --watch for hot reload
+yarn install
+yarn start          # starts web server on http://localhost:3000
+yarn dev            # starts with --watch for hot reload
 ```
 
 ## CLI Usage
 
 ```bash
-npx tsx src/cli.ts label1.png                          # one label
-npx tsx src/cli.ts label1.png label2.pdf               # two labels side-by-side
-npx tsx src/cli.ts label.png -o output.pdf --dpi 150   # custom output + DPI
-npx tsx src/cli.ts label.png --no-crop --fit fill       # skip auto-crop, fill mode
+yarn cli label1.png                          # one label
+yarn cli label1.png label2.pdf               # two labels side-by-side
+yarn cli label.png -o output.pdf --dpi 150   # custom output + DPI
+yarn cli label.png --no-crop --fit fill       # skip auto-crop, fill mode
 ```
 
 ## Build & Type Check
 
 ```bash
-npm run typecheck  # type-check without emitting
-npm run build      # compile to dist/ (JS + declarations + source maps)
+yarn typecheck     # type-check without emitting
+yarn build         # compile to dist/ (JS + declarations + source maps)
 ```
+
+## Debugging in VS Code
+
+Open the `shipping_label_node` folder in VS Code. The included `.vscode/launch.json` provides:
+
+| Configuration              | Description                                  |
+|---------------------------|----------------------------------------------|
+| **Start Web Server**       | Launch the app with debugger attached         |
+| **Start Web Server (Dev)** | Launch with `--watch` for hot reload + debug  |
+| **Run CLI**                | Run the CLI (prompts for label file path)     |
+| **Attach to Process**      | Attach to a running `yarn debug` process      |
+
+To debug from the terminal: `yarn debug` starts the app with `--inspect` on port 9229, then use the **Attach to Process** configuration.
 
 ## Dependencies
 
@@ -54,5 +67,5 @@ npm run build      # compile to dist/ (JS + declarations + source maps)
 
 | Variable | Default   | Description        |
 |----------|-----------|--------------------|
-| `PORT`   | `5000`    | Web server port    |
+| `PORT`   | `3000`    | Web server port    |
 | `HOST`   | `0.0.0.0` | Web server host   |

@@ -11,6 +11,7 @@
     "build": "tsc",
     "start": "tsx src/app.ts",
     "dev": "tsx --watch src/app.ts",
+    "debug": "node --inspect --import tsx/esm src/app.ts",
     "cli": "tsx src/cli.ts",
     "typecheck": "tsc --noEmit",
     "generate-icons": "node scripts/generate-icons.js"
