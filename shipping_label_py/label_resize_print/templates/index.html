@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#2563eb">
+    <link rel="manifest" href="/manifest.json">
+    <title>Label Resize & Print</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f0f4f8;
+            color: #1e293b;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+
+        .container {
+            max-width: 540px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 1.5rem;
+            margin: 1rem 0 0.25rem;
+            color: #1e40af;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #64748b;
+            font-size: 0.875rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Drop zones — side by side */
+        .drop-zones {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .drop-zone {
+            flex: 1;
+            border: 2px dashed #93c5fd;
+            border-radius: 12px;
+            background: #fff;
+            padding: 1.5rem 0.75rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: #2563eb;
+            background: #eff6ff;
+        }
+
+        .drop-zone.has-file {
+            border-color: #22c55e;
+            background: #f0fdf4;
+        }
+
+        .drop-zone-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #2563eb;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+
+        .drop-zone-icon {
+            font-size: 2rem;
+            margin-bottom: 0.4rem;
+        }
+
+        .drop-zone-text {
+            color: #64748b;
+            font-size: 0.85rem;
+        }
+
+        .drop-zone-text strong { color: #2563eb; }
+
+        .file-name {
+            margin-top: 0.5rem;
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: #16a34a;
+            word-break: break-all;
+        }
+
+        .file-input { display: none; }
+
+        .preview-thumb {
+            max-width: 100%;
+            max-height: 100px;
+            border-radius: 6px;
+            margin-top: 0.5rem;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+        }
+
+        .clear-btn {
+            display: inline-block;
+            margin-top: 0.4rem;
+            font-size: 0.75rem;
+            color: #dc2626;
+            background: none;
+            border: none;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        /* Page layout preview */
+        .page-preview {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 0.5rem;
+            margin-bottom: 1rem;
+            aspect-ratio: 11 / 8.5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .page-preview .slot {
+            width: 36%;
+            aspect-ratio: 4 / 6;
+            border: 1px dashed #cbd5e1;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            color: #94a3b8;
+            overflow: hidden;
+        }
+
+        .page-preview .slot.filled {
+            border-color: #22c55e;
+            background: #f0fdf4;
+        }
+
+        .page-preview .slot img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        /* Options */
+        .options {
+            background: #fff;
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
+
+        .option-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.85rem;
+        }
+
+        .option-row:last-child { margin-bottom: 0; }
+
+        .option-row label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #475569;
+        }
+
+        .option-row select,
+        .option-row input {
+            padding: 0.4rem 0.6rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            background: #f8fafc;
+            color: #1e293b;
+            width: 140px;
+        }
+
+        /* Button */
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 0.9rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            color: #fff;
+        }
+
+        .btn-primary:hover { background: #1d4ed8; }
+        .btn-primary:disabled { background: #93c5fd; cursor: not-allowed; }
+
+        /* Status */
+        .status {
+            text-align: center;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            min-height: 1.5rem;
+        }
+
+        .status.error { color: #dc2626; }
+        .status.success { color: #16a34a; }
+
+        .spinner {
+            display: inline-block;
+            width: 18px; height: 18px;
+            border: 2px solid #93c5fd;
+            border-top-color: #2563eb;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            vertical-align: middle;
+            margin-right: 0.5rem;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📦 Label Resize & Print</h1>
+        <p class="subtitle">Two 4×6 labels on one 8.5×11 landscape page</p>
+
+        <!-- Two drop zones side by side -->
+        <div class="drop-zones">
+            <div class="drop-zone" id="dropZone1">
+                <div class="drop-zone-label">Left Label</div>
+                <div class="drop-zone-icon">📄</div>
+                <div class="drop-zone-text"><strong>Tap</strong> or drop</div>
+                <div class="file-name" id="fileName1"></div>
+                <input type="file" class="file-input" id="fileInput1"
+                       accept=".png,.jpg,.jpeg,.bmp,.tiff,.tif,.webp,.pdf">
+            </div>
+            <div class="drop-zone" id="dropZone2">
+                <div class="drop-zone-label">Right Label (optional)</div>
+                <div class="drop-zone-icon">📄</div>
+                <div class="drop-zone-text"><strong>Tap</strong> or drop</div>
+                <div class="file-name" id="fileName2"></div>
+                <input type="file" class="file-input" id="fileInput2"
+                       accept=".png,.jpg,.jpeg,.bmp,.tiff,.tif,.webp,.pdf">
+            </div>
+        </div>
+
+        <!-- Page layout preview -->
+        <div class="page-preview">
+            <div class="slot" id="slot1">Left</div>
+            <div class="slot" id="slot2">Right</div>
+        </div>
+
+        <!-- Options -->
+        <div class="options">
+            <div class="option-row">
+                <label for="fitSelect">Fit Mode</label>
+                <select id="fitSelect">
+                    <option value="fit" selected>Fit (white margins)</option>
+                    <option value="fill">Fill (crop excess)</option>
+                    <option value="stretch">Stretch</option>
+                </select>
+            </div>
+
+            <div class="option-row">
+                <label for="autoCropCheck">Auto-Crop to Border</label>
+                <input type="checkbox" id="autoCropCheck" checked
+                       style="width:auto; accent-color:#2563eb; transform:scale(1.3)">
+            </div>
+
+            <div class="option-row">
+                <label for="dpiInput">DPI</label>
+                <input type="number" id="dpiInput" value="{{ default_dpi }}" min="72" max="600">
+            </div>
+        </div>
+
+        <button class="btn btn-primary" id="resizeBtn" disabled>
+            Resize & Download PDF
+        </button>
+
+        <div class="status" id="status"></div>
+    </div>
+
+    <script>
+        // Register service worker for PWA / iOS home screen support
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/static/sw.js').catch(() => {});
+        }
+
+        let file1 = null, file2 = null;
+
+        function setupDropZone(zoneId, inputId, nameId, slotId, setFile) {
+            const zone = document.getElementById(zoneId);
+            const input = document.getElementById(inputId);
+            const nameEl = document.getElementById(nameId);
+            const slot = document.getElementById(slotId);
+
+            zone.addEventListener('click', () => input.click());
+
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                zone.classList.add('dragover');
+            });
+            zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('dragover');
+                if (e.dataTransfer.files.length) onFile(e.dataTransfer.files[0]);
+            });
+
+            input.addEventListener('change', () => {
+                if (input.files.length) onFile(input.files[0]);
+            });
+
+            function onFile(f) {
+                setFile(f);
+                nameEl.textContent = f.name;
+                zone.classList.add('has-file');
+                document.getElementById('resizeBtn').disabled = !file1;
+                document.getElementById('status').textContent = '';
+
+                // Preview in slot
+                const ext = f.name.split('.').pop().toLowerCase();
+                slot.classList.add('filled');
+                if (ext !== 'pdf') {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        slot.innerHTML = `<img src="${e.target.result}" alt="preview">`;
+                    };
+                    reader.readAsDataURL(f);
+                } else {
+                    slot.textContent = '📄 PDF';
+                }
+            }
+        }
+
+        setupDropZone('dropZone1', 'fileInput1', 'fileName1', 'slot1', (f) => { file1 = f; });
+        setupDropZone('dropZone2', 'fileInput2', 'fileName2', 'slot2', (f) => { file2 = f; });
+
+        // Resize & download
+        document.getElementById('resizeBtn').addEventListener('click', async () => {
+            if (!file1) return;
+
+            const formData = new FormData();
+            formData.append('file', file1);
+            if (file2) formData.append('file2', file2);
+
+            formData.append('dpi', document.getElementById('dpiInput').value);
+            formData.append('fit', document.getElementById('fitSelect').value);
+            formData.append('auto_crop', document.getElementById('autoCropCheck').checked ? 'true' : 'false');
+
+            const btn = document.getElementById('resizeBtn');
+            const statusEl = document.getElementById('status');
+            btn.disabled = true;
+            statusEl.innerHTML = '<span class="spinner"></span> Processing…';
+            statusEl.className = 'status';
+
+            try {
+                const resp = await fetch('/resize', { method: 'POST', body: formData });
+
+                if (!resp.ok) {
+                    const err = await resp.json();
+                    throw new Error(err.error || 'Resize failed');
+                }
+
+                const blob = await resp.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = file1.name.replace(/\.[^.]+$/, '') + '_label.pdf';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                statusEl.textContent = '✅ Label ready — check your downloads!';
+                statusEl.className = 'status success';
+            } catch (e) {
+                statusEl.textContent = '❌ ' + e.message;
+                statusEl.className = 'status error';
+            } finally {
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

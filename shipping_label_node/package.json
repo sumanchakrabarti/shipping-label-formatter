@@ -1,0 +1,33 @@
+{
+  "name": "shipping-label-node",
+  "version": "1.0.0",
+  "description": "Shipping label formatter – resize, auto-crop, and generate 2-up landscape letter PDFs",
+  "type": "module",
+  "main": "dist/app.js",
+  "bin": {
+    "label-resize-print": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "tsx src/app.ts",
+    "dev": "tsx --watch src/app.ts",
+    "cli": "tsx src/cli.ts",
+    "typecheck": "tsc --noEmit",
+    "generate-icons": "node scripts/generate-icons.js"
+  },
+  "dependencies": {
+    "commander": "^12.0.0",
+    "express": "^4.21.0",
+    "multer": "^1.4.5-lts.1",
+    "mupdf": "^1.27.0",
+    "pdf-lib": "^1.17.1",
+    "sharp": "^0.33.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/multer": "^1.4.12",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.7.0"
+  }
+}
