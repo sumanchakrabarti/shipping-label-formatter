@@ -14,6 +14,12 @@ import {
 } from "./core.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// In dev, __dirname is src/src/; in production, __dirname is dist/.
+// Resolve the project root so asset paths work in both modes.
+const isDev = path.basename(__dirname) === "src";
+const rootDir = isDev ? path.resolve(__dirname, "..") : __dirname;
+
 const app = express();
 
 // 50 MB upload limit
@@ -23,7 +29,7 @@ const upload = multer({
 });
 
 // Serve static assets (sw.js, icons)
-app.use("/static", express.static(path.join(__dirname, "public")));
+app.use("/static", express.static(path.join(rootDir, "public")));
 
 // ---------------------------------------------------------------------------
 // API Routes
@@ -119,7 +125,9 @@ app.post("/resize", uploadFields, async (req: Request, res: Response) => {
 // Serve React build (production) or fallback HTML (dev without Vite)
 // ---------------------------------------------------------------------------
 
-const clientDist = path.join(__dirname, "client");
+const clientDist = isDev
+  ? path.join(rootDir, "dist", "client")
+  : path.join(rootDir, "client");
 
 if (fs.existsSync(path.join(clientDist, "index.html"))) {
   app.use(express.static(clientDist));

@@ -88,7 +88,7 @@ export default function App() {
 
   return (
     <div className="container">
-      <h1>📦 Label Resize &amp; Print</h1>
+      <h1>📦 Shipping Label Resize &amp; Print</h1>
       <p className="subtitle">Two labels on one 8.5×11 landscape page</p>
 
       <div className="drop-zones">
