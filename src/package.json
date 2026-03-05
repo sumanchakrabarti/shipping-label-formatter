@@ -5,7 +5,7 @@
   "type": "module",
   "main": "dist/app.js",
   "scripts": {
-    "build": "tsc && cd client && npx vite build",
+    "build": "tsc && cd client && npx vite build && cd .. && node scripts/postbuild.js",
     "build:server": "tsc",
     "build:client": "cd client && npx vite build",
     "start": "tsx src/app.ts",

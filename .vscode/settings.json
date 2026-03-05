@@ -1,0 +1,5 @@
+{
+    "appService.defaultWebAppToDeploy": "/subscriptions/115a7818-1482-4285-948a-a8f0f40dac98/resourceGroups/ShippingLabelTool/providers/Microsoft.Web/sites/shipping-label-tool",
+    "appService.deploySubpath": "src/dist",
+    "appService.respectGitignore": false
+}

@@ -23,7 +23,7 @@ const upload = multer({
 });
 
 // Serve static assets (sw.js, icons)
-app.use("/static", express.static(path.join(__dirname, "..", "public")));
+app.use("/static", express.static(path.join(__dirname, "public")));
 
 // ---------------------------------------------------------------------------
 // API Routes
@@ -119,7 +119,7 @@ app.post("/resize", uploadFields, async (req: Request, res: Response) => {
 // Serve React build (production) or fallback HTML (dev without Vite)
 // ---------------------------------------------------------------------------
 
-const clientDist = path.join(__dirname, "..", "client", "dist");
+const clientDist = path.join(__dirname, "client");
 
 if (fs.existsSync(path.join(clientDist, "index.html"))) {
   app.use(express.static(clientDist));
