@@ -5,7 +5,6 @@ A Node.js/TypeScript port of the Python shipping label formatter. Takes shipping
 ## Features
 
 - **Web UI** — drag-and-drop two labels, preview layout, download PDF
-- **CLI** — process labels from the command line
 - **Auto-crop** — detects the black border rectangle and crops to it (8 px outward padding)
 - **2-up layout** — places 1 or 2 labels side-by-side on a landscape letter page
 - **Fit modes** — Fit (white margins), Fill (crop excess), or Stretch
@@ -19,15 +18,6 @@ A Node.js/TypeScript port of the Python shipping label formatter. Takes shipping
 yarn install
 yarn start          # starts web server on http://localhost:3000
 yarn dev            # starts with --watch for hot reload
-```
-
-## CLI Usage
-
-```bash
-yarn cli label1.png                          # one label
-yarn cli label1.png label2.pdf               # two labels side-by-side
-yarn cli label.png -o output.pdf --dpi 150   # custom output + DPI
-yarn cli label.png --no-crop --fit fill       # skip auto-crop, fill mode
 ```
 
 ## Build & Type Check
@@ -45,7 +35,6 @@ Open the `shipping_label_node` folder in VS Code. The included `.vscode/launch.j
 |---------------------------|----------------------------------------------|
 | **Start Web Server**       | Launch the app with debugger attached         |
 | **Start Web Server (Dev)** | Launch with `--watch` for hot reload + debug  |
-| **Run CLI**                | Run the CLI (prompts for label file path)     |
 | **Attach to Process**      | Attach to a running `yarn debug` process      |
 
 To debug from the terminal: `yarn debug` starts the app with `--inspect` on port 9229, then use the **Attach to Process** configuration.
@@ -59,7 +48,6 @@ To debug from the terminal: `yarn debug` starts the app with `--inspect` on port
 | `pdf-lib`  | PDF creation                     |
 | `express`  | Web server                       |
 | `multer`   | File upload middleware            |
-| `commander`| CLI argument parsing             |
 | `tsx`      | TypeScript execution (dev)       |
 | `typescript` | Type checking & compilation    |
 
