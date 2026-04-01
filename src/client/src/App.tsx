@@ -3,6 +3,8 @@ import DropZone from "./components/DropZone";
 import PagePreview from "./components/PagePreview";
 import Settings from "./components/Settings";
 import OutputPreview from "./components/OutputPreview";
+import CropRotateModal from "./components/CropRotateModal";
+import { applyEditsToFile, type CropRotateResult } from "./lib/image-edit";
 
 interface StatusMessage {
   text: string;
@@ -19,6 +21,7 @@ export default function App() {
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
   const [pdfFileName, setPdfFileName] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [cropSlot, setCropSlot] = useState<1 | 2 | null>(null);
 
   const handleResize = useCallback(async () => {
     if (!file1) return;
@@ -86,6 +89,25 @@ export default function App() {
     setAutoCrop(true);
   }, []);
 
+  const handleEditImage = useCallback((slot: 1 | 2) => {
+    setCropSlot(slot);
+  }, []);
+
+  const handleCropApply = useCallback(
+    async (result: CropRotateResult) => {
+      if (!cropSlot) return;
+      const origFile = cropSlot === 1 ? file1 : file2;
+      if (!origFile) return;
+      const editedFile = await applyEditsToFile(origFile, result);
+      if (cropSlot === 1) setFile1(editedFile);
+      else setFile2(editedFile);
+      setCropSlot(null);
+    },
+    [cropSlot, file1, file2],
+  );
+
+  const handleCropCancel = useCallback(() => setCropSlot(null), []);
+
   return (
     <div className="container">
       <h1>📦 Shipping Label Resize &amp; Print</h1>
@@ -106,7 +128,7 @@ export default function App() {
         />
       </div>
 
-      <PagePreview file1={file1} file2={file2} labelSize={labelSize} />
+      <PagePreview file1={file1} file2={file2} labelSize={labelSize} onEditImage={handleEditImage} />
 
       <Settings
         labelSize={labelSize}
@@ -145,6 +167,14 @@ export default function App() {
           {isProcessing && <span className="spinner" />}
           {status.text}
         </div>
+      )}
+
+      {cropSlot && (cropSlot === 1 ? file1 : file2) && (
+        <CropRotateModal
+          file={(cropSlot === 1 ? file1 : file2)!}
+          onApply={handleCropApply}
+          onCancel={handleCropCancel}
+        />
       )}
     </div>
   );

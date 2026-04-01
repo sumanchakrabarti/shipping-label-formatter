@@ -5,9 +5,9 @@
       "name": "Start Web Server",
       "type": "node",
       "request": "launch",
-      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/tsx",
+      "runtimeExecutable": "${workspaceFolder}/src/node_modules/.bin/tsx",
       "args": ["src/app.ts"],
-      "cwd": "${workspaceFolder}",
+      "cwd": "${workspaceFolder}/src",
       "console": "integratedTerminal",
       "env": {
         "PORT": "3000"
@@ -19,9 +19,9 @@
       "name": "Start Web Server (Dev/Watch)",
       "type": "node",
       "request": "launch",
-      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/tsx",
+      "runtimeExecutable": "${workspaceFolder}/src/node_modules/.bin/tsx",
       "args": ["--watch", "src/app.ts"],
-      "cwd": "${workspaceFolder}",
+      "cwd": "${workspaceFolder}/src",
       "console": "integratedTerminal",
       "env": {
         "PORT": "3000"
@@ -33,9 +33,9 @@
       "name": "Run CLI",
       "type": "node",
       "request": "launch",
-      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/tsx",
+      "runtimeExecutable": "${workspaceFolder}/src/node_modules/.bin/tsx",
       "args": ["src/cli.ts", "${input:labelFile}"],
-      "cwd": "${workspaceFolder}",
+      "cwd": "${workspaceFolder}/src",
       "console": "integratedTerminal",
       "sourceMaps": true,
       "skipFiles": ["<node_internals>/**"]
@@ -47,8 +47,8 @@
       "port": 9229,
       "sourceMaps": true,
       "skipFiles": ["<node_internals>/**"],
-      "localRoot": "${workspaceFolder}",
-      "remoteRoot": "${workspaceFolder}"
+      "localRoot": "${workspaceFolder}/src",
+      "remoteRoot": "${workspaceFolder}/src"
     }
   ],
   "inputs": [

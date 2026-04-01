@@ -5,16 +5,19 @@ interface PagePreviewProps {
   file1: File | null;
   file2: File | null;
   labelSize: string;
+  onEditImage?: (slot: 1 | 2) => void;
 }
 
 function PreviewSlot({
   file,
   labelSize,
   placeholder,
+  onEdit,
 }: {
   file: File | null;
   labelSize: string;
   placeholder: string;
+  onEdit?: () => void;
 }) {
   const [preview, setPreview] = useState<string | null>(null);
   const [w, h] = labelSize.split("x").map(Number);
@@ -37,13 +40,22 @@ function PreviewSlot({
     }
   }, [file]);
 
+  const handleClick = () => {
+    if (preview && onEdit) onEdit();
+  };
+
   return (
     <div
-      className={`slot ${file ? "filled" : ""}`}
+      className={`slot ${file ? "filled" : ""} ${preview ? "editable" : ""}`}
       style={{ aspectRatio: `${w} / ${h}` }}
+      onClick={handleClick}
+      title={preview ? "Click to crop / rotate" : undefined}
     >
       {preview ? (
-        <img src={preview} alt="preview" />
+        <>
+          <img src={preview} alt="preview" />
+          <div className="slot-edit-badge">✂ Edit</div>
+        </>
       ) : (
         placeholder
       )}
@@ -51,11 +63,21 @@ function PreviewSlot({
   );
 }
 
-export default function PagePreview({ file1, file2, labelSize }: PagePreviewProps) {
+export default function PagePreview({ file1, file2, labelSize, onEditImage }: PagePreviewProps) {
   return (
     <div className="page-preview">
-      <PreviewSlot file={file1} labelSize={labelSize} placeholder="Left" />
-      <PreviewSlot file={file2} labelSize={labelSize} placeholder="Right" />
+      <PreviewSlot
+        file={file1}
+        labelSize={labelSize}
+        placeholder="Left"
+        onEdit={onEditImage ? () => onEditImage(1) : undefined}
+      />
+      <PreviewSlot
+        file={file2}
+        labelSize={labelSize}
+        placeholder="Right"
+        onEdit={onEditImage ? () => onEditImage(2) : undefined}
+      />
     </div>
   );
 }
