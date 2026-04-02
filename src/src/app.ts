@@ -80,6 +80,12 @@ app.post("/resize", uploadFields, async (req: Request, res: Response) => {
     const autoCrop =
       ((req.body.auto_crop as string) ?? "true").toLowerCase() === "true";
     const labelSize = (req.body.label_size as string) ?? "4x6";
+    const pageNum1 = parseInt((req.body.page as string) ?? "1", 10);
+    let pageNum2: number | undefined;
+    const pageParam2 = req.body.page2 as string | undefined;
+    if (pageParam2) {
+      pageNum2 = parseInt(pageParam2, 10);
+    }
 
     let buffer2: Buffer | undefined;
     let ext2: string | undefined;
@@ -100,6 +106,8 @@ app.post("/resize", uploadFields, async (req: Request, res: Response) => {
       fitMode: fitMode as "fit" | "fill" | "stretch",
       autoCrop,
       labelSize,
+      pageNum1,
+      pageNum2,
     });
 
     const baseName = file1.originalname.replace(/\.[^.]+$/, "");

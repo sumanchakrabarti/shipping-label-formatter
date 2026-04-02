@@ -17,7 +17,7 @@ export default function OutputPreview({ blobUrl }: OutputPreviewProps) {
     (async () => {
       const resp = await fetch(blobUrl);
       const buf = await resp.arrayBuffer();
-      const canvas = await renderPdfPageToCanvas(buf, 520);
+      const canvas = await renderPdfPageToCanvas(buf, { maxWidth: 520 });
       if (!cancelled && container) {
         container.innerHTML = "";
         container.appendChild(canvas);

@@ -18,7 +18,7 @@ async function fileToImage(file: File): Promise<HTMLImageElement> {
   const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
   if (ext === "pdf") {
     // Render PDF at high resolution for full-quality output
-    const dataUrl = await renderPdfToDataUrl(file, 4000);
+    const dataUrl = await renderPdfToDataUrl(file, { maxDim: 4000 });
     return loadImage(dataUrl);
   }
   const dataUrl = await new Promise<string>((resolve) => {

@@ -14,6 +14,8 @@ interface StatusMessage {
 export default function App() {
   const [file1, setFile1] = useState<File | null>(null);
   const [file2, setFile2] = useState<File | null>(null);
+  const [selectedPage1, setSelectedPage1] = useState(1);
+  const [selectedPage2, setSelectedPage2] = useState(1);
   const [labelSize, setLabelSize] = useState("4x6");
   const [fitMode, setFitMode] = useState("fit");
   const [autoCrop, setAutoCrop] = useState(true);
@@ -28,7 +30,11 @@ export default function App() {
 
     const formData = new FormData();
     formData.append("file", file1);
-    if (file2) formData.append("file2", file2);
+    formData.append("page", String(selectedPage1));
+    if (file2) {
+      formData.append("file2", file2);
+      formData.append("page2", String(selectedPage2));
+    }
     formData.append("fit", fitMode);
     formData.append("auto_crop", autoCrop ? "true" : "false");
     formData.append("label_size", labelSize);
@@ -60,7 +66,7 @@ export default function App() {
     } finally {
       setIsProcessing(false);
     }
-  }, [file1, file2, fitMode, autoCrop, labelSize]);
+  }, [file1, file2, selectedPage1, selectedPage2, fitMode, autoCrop, labelSize]);
 
   const handleDownload = useCallback(() => {
     if (!pdfBlobUrl) return;
@@ -128,7 +134,18 @@ export default function App() {
         />
       </div>
 
-      <PagePreview file1={file1} file2={file2} labelSize={labelSize} onEditImage={handleEditImage} />
+      <PagePreview
+        file1={file1}
+        file2={file2}
+        labelSize={labelSize}
+        selectedPage1={selectedPage1}
+        selectedPage2={selectedPage2}
+        onSelectedPageChange={(slot, page) => {
+          if (slot === 1) setSelectedPage1(page);
+          else setSelectedPage2(page);
+        }}
+        onEditImage={handleEditImage}
+      />
 
       <Settings
         labelSize={labelSize}

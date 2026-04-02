@@ -3,14 +3,31 @@ import pdfjsWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
-/** Render page 1 of a PDF File to a data URL for thumbnail previews. */
+interface RenderPdfToDataUrlOptions {
+  pageNum?: number;
+  maxDim?: number;
+}
+
+interface RenderPdfPageToCanvasOptions {
+  pageNum?: number;
+  maxWidth?: number;
+}
+
+/** Get total page count of a PDF File. */
+export async function getPdfPageCount(file: File): Promise<number> {
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+  return pdf.numPages;
+}
+
+/** Render a specific page of a PDF File to a data URL for thumbnail previews. */
 export async function renderPdfToDataUrl(
   file: File,
-  maxDim = 300,
+  { pageNum = 1, maxDim = 300 }: RenderPdfToDataUrlOptions = {},
 ): Promise<string> {
   const buf = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
-  const page = await pdf.getPage(1);
+  const page = await pdf.getPage(Math.max(1, Math.min(pageNum, pdf.numPages)));
   const vp = page.getViewport({ scale: 1 });
   const scale = Math.min(maxDim / vp.width, maxDim / vp.height, 2);
   const scaled = page.getViewport({ scale });
@@ -24,13 +41,13 @@ export async function renderPdfToDataUrl(
   return canvas.toDataURL("image/png");
 }
 
-/** Render page 1 of a PDF ArrayBuffer to an HTMLCanvasElement. */
+/** Render a specific page of a PDF ArrayBuffer to an HTMLCanvasElement. */
 export async function renderPdfPageToCanvas(
   data: ArrayBuffer,
-  maxWidth = 520,
+  { pageNum = 1, maxWidth = 520 }: RenderPdfPageToCanvasOptions = {},
 ): Promise<HTMLCanvasElement> {
   const pdf = await pdfjsLib.getDocument({ data }).promise;
-  const page = await pdf.getPage(1);
+  const page = await pdf.getPage(Math.max(1, Math.min(pageNum, pdf.numPages)));
   const vp = page.getViewport({ scale: 1 });
   const scale = Math.min(maxWidth / vp.width, 2);
   const scaled = page.getViewport({ scale });

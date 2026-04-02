@@ -36,6 +36,8 @@ export interface ResizeLabelFromBuffersOptions {
   fitMode?: FitMode;
   autoCrop?: boolean;
   labelSize?: string;
+  pageNum1?: number;
+  pageNum2?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -417,15 +419,19 @@ export async function resizeLabelFromBuffers({
   fitMode = "fit",
   autoCrop = true,
   labelSize: labelSizeKey = DEFAULT_LABEL_SIZE,
+  pageNum1,
+  pageNum2,
 }: ResizeLabelFromBuffersOptions): Promise<Buffer> {
   const size = LABEL_SIZES[labelSizeKey] ?? LABEL_SIZES[DEFAULT_LABEL_SIZE];
 
-  async function bufToImage(buf: Buffer, ext: string): Promise<Buffer> {
+  async function bufToImage(buf: Buffer, ext: string, pageNum?: number): Promise<Buffer> {
     if (SUPPORTED_PDF_EXTS.has(ext)) {
       const tmp = path.join(os.tmpdir(), `label_${Date.now()}${ext}`);
       fs.writeFileSync(tmp, buf);
       try {
-        return await loadImageFromPdf(tmp, 0, dpi);
+        // Convert 1-indexed page number to 0-indexed for mupdf
+        const zeroIndexedPage = pageNum ? pageNum - 1 : 0;
+        return await loadImageFromPdf(tmp, zeroIndexedPage, dpi);
       } finally {
         fs.unlinkSync(tmp);
       }
@@ -433,15 +439,15 @@ export async function resizeLabelFromBuffers({
     return sharp(buf).png().toBuffer();
   }
 
-  async function prepare(buf: Buffer, ext: string): Promise<Buffer> {
-    let img = await bufToImage(buf, ext);
+  async function prepare(buf: Buffer, ext: string, pageNum?: number): Promise<Buffer> {
+    let img = await bufToImage(buf, ext, pageNum);
     if (autoCrop) img = await autoCropLabel(img);
     return resizeImage(img, size, dpi, fitMode);
   }
 
-  const labels: Buffer[] = [await prepare(buffer1, ext1)];
+  const labels: Buffer[] = [await prepare(buffer1, ext1, pageNum1)];
   if (buffer2 && ext2) {
-    labels.push(await prepare(buffer2, ext2));
+    labels.push(await prepare(buffer2, ext2, pageNum2));
   }
 
   const pdfBytes = await buildPdf2Up(labels, size);

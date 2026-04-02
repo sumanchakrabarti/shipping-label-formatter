@@ -35,7 +35,7 @@ export default function CropRotateModal({
       const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
       let src: string;
       if (ext === "pdf") {
-        src = await renderPdfToDataUrl(file, 800);
+        src = await renderPdfToDataUrl(file, { maxDim: 800 });
       } else {
         src = await new Promise<string>((resolve) => {
           const reader = new FileReader();
