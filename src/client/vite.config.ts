@@ -18,6 +18,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       "/resize": "http://localhost:3000",
+      "/pdf/modify": "http://localhost:3000",
       "/manifest.json": "http://localhost:3000",
       "/static": "http://localhost:3000",
     },

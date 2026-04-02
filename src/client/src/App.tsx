@@ -4,18 +4,30 @@ import PagePreview from "./components/PagePreview";
 import Settings from "./components/Settings";
 import OutputPreview from "./components/OutputPreview";
 import CropRotateModal from "./components/CropRotateModal";
+import PdfPageSelector from "./components/PdfPageSelector";
+import PdfDropZone from "./components/PdfDropZone";
 import { applyEditsToFile, type CropRotateResult } from "./lib/image-edit";
+import { getPdfPageCount } from "./lib/pdf-preview";
 
 interface StatusMessage {
   text: string;
   type: "" | "success" | "error";
 }
 
+type AppMode = "shipping" | "pdf";
+type PdfAction = "merge" | "select";
+
 export default function App() {
+  const [mode, setMode] = useState<AppMode>("shipping");
   const [file1, setFile1] = useState<File | null>(null);
   const [file2, setFile2] = useState<File | null>(null);
   const [selectedPage1, setSelectedPage1] = useState(1);
   const [selectedPage2, setSelectedPage2] = useState(1);
+  const [pdfAction, setPdfAction] = useState<PdfAction>("merge");
+  const [mergeFiles, setMergeFiles] = useState<File[]>([]);
+  const [selectFile, setSelectFile] = useState<File | null>(null);
+  const [selectedPdfPages, setSelectedPdfPages] = useState<number[]>([]);
+  const [selectFilePageCount, setSelectFilePageCount] = useState<number | null>(null);
   const [labelSize, setLabelSize] = useState("4x6");
   const [fitMode, setFitMode] = useState("fit");
   const [autoCrop, setAutoCrop] = useState(true);
@@ -74,6 +86,60 @@ export default function App() {
     }
   }, [file1, file2, selectedPage1, selectedPage2, fitMode, autoCrop, labelSize]);
 
+  const handleModifyPdf = useCallback(async () => {
+    const formData = new FormData();
+    formData.append("action", pdfAction);
+
+    if (pdfAction === "merge") {
+      if (mergeFiles.length < 2) {
+        setStatus({ text: "❌ Add at least two PDF files to merge", type: "error" });
+        return;
+      }
+      for (const file of mergeFiles) {
+        formData.append("files", file);
+      }
+    } else {
+      if (!selectFile) {
+        setStatus({ text: "❌ Select a PDF file first", type: "error" });
+        return;
+      }
+      if (!selectedPdfPages.length) {
+        setStatus({ text: "❌ Select at least one page", type: "error" });
+        return;
+      }
+      formData.append("files", selectFile);
+      formData.append("pages", selectedPdfPages.join(","));
+    }
+
+    setIsProcessing(true);
+    setStatus({ text: "Processing…", type: "" });
+    setPdfBlobUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+
+    try {
+      const resp = await fetch("/pdf/modify", { method: "POST", body: formData });
+      if (!resp.ok) {
+        const err = (await resp.json()) as { error?: string };
+        throw new Error(err.error || "PDF operation failed");
+      }
+
+      const blob = await resp.blob();
+      const url = URL.createObjectURL(blob);
+      setPdfBlobUrl(url);
+      setPdfFileName(pdfAction === "merge" ? "merged.pdf" : "selected_pages.pdf");
+      setStatus({ text: "✅ PDF ready", type: "success" });
+    } catch (e) {
+      setStatus({
+        text: "❌ " + (e instanceof Error ? e.message : "Unknown error"),
+        type: "error",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [pdfAction, mergeFiles, selectFile, selectedPdfPages]);
+
   const handleDownload = useCallback(() => {
     if (!pdfBlobUrl) return;
     const a = document.createElement("a");
@@ -120,68 +186,198 @@ export default function App() {
 
   const handleCropCancel = useCallback(() => setCropSlot(null), []);
 
+  const handleModeChange = useCallback((nextMode: AppMode) => {
+    setMode(nextMode);
+    setStatus({ text: "", type: "" });
+    setCropSlot(null);
+  }, []);
+
+  const handleSelectFile = useCallback(async (file: File | null) => {
+    setSelectFile(file);
+    setSelectedPdfPages([]);
+    if (!file) {
+      setSelectFilePageCount(null);
+      return;
+    }
+    try {
+      const count = await getPdfPageCount(file);
+      setSelectFilePageCount(count);
+      setSelectedPdfPages(Array.from({ length: count }, (_, i) => i + 1));
+    } catch {
+      setSelectFilePageCount(null);
+    }
+  }, []);
+
   return (
     <div className="container">
-      <h1>📦 Shipping Label Resize &amp; Print</h1>
-      <p className="subtitle">Two labels on one 8.5×11 landscape page</p>
+      <h1>📦 Shipping Label &amp; PDF Toolkit</h1>
 
-      <div className="drop-zones">
-        <DropZone
-          label="Left Label"
-          file={file1}
-          onFile={setFile1}
-          onClear={() => setFile1(null)}
-        />
-        <DropZone
-          label="Right Label (optional)"
-          file={file2}
-          onFile={setFile2}
-          onClear={() => setFile2(null)}
-        />
-      </div>
-
-      <PagePreview
-        file1={file1}
-        file2={file2}
-        labelSize={labelSize}
-        selectedPage1={selectedPage1}
-        selectedPage2={selectedPage2}
-        onSelectedPageChange={(slot, page) => {
-          if (slot === 1) setSelectedPage1(page);
-          else setSelectedPage2(page);
-        }}
-        onEditImage={handleEditImage}
-      />
-
-      <Settings
-        labelSize={labelSize}
-        fitMode={fitMode}
-        autoCrop={autoCrop}
-        onLabelSizeChange={setLabelSize}
-        onFitModeChange={setFitMode}
-        onAutoCropChange={setAutoCrop}
-        onReset={handleResetSettings}
-      />
-
-      <div className="btn-row">
+      <div className="mode-menu" role="tablist" aria-label="App mode">
         <button
-          className="btn btn-primary"
-          disabled={!file1 || isProcessing}
-          onClick={handleResize}
+          type="button"
+          className={`mode-btn ${mode === "shipping" ? "active" : ""}`}
+          onClick={() => handleModeChange("shipping")}
+          role="tab"
+          aria-selected={mode === "shipping"}
         >
-          {isProcessing ? "Processing…" : "Resize & Preview"}
+          Configure Shipping Labels
         </button>
-        {pdfBlobUrl && (
-          <>
-            <button className="btn btn-success" onClick={handleDownload}>
-              ⬇ Download
-            </button>
-            <button className="btn btn-primary" onClick={handlePrint}>
-              🖨 Print
-            </button>
-          </>
-        )}
+        <button
+          type="button"
+          className={`mode-btn ${mode === "pdf" ? "active" : ""}`}
+          onClick={() => handleModeChange("pdf")}
+          role="tab"
+          aria-selected={mode === "pdf"}
+        >
+          Modify PDFs
+        </button>
       </div>
+
+      <p className="subtitle">
+        {mode === "shipping"
+          ? "Two labels on one 8.5×11 landscape page"
+          : "Merge PDFs or select exact pages into a new PDF"}
+      </p>
+
+      {mode === "shipping" ? (
+        <>
+          <div className="drop-zones">
+            <DropZone
+              label="Left Label"
+              file={file1}
+              onFile={setFile1}
+              onClear={() => setFile1(null)}
+            />
+            <DropZone
+              label="Right Label (optional)"
+              file={file2}
+              onFile={setFile2}
+              onClear={() => setFile2(null)}
+            />
+          </div>
+
+          <PagePreview
+            file1={file1}
+            file2={file2}
+            labelSize={labelSize}
+            selectedPage1={selectedPage1}
+            selectedPage2={selectedPage2}
+            onSelectedPageChange={(slot, page) => {
+              if (slot === 1) setSelectedPage1(page);
+              else setSelectedPage2(page);
+            }}
+            onEditImage={handleEditImage}
+          />
+
+          <Settings
+            labelSize={labelSize}
+            fitMode={fitMode}
+            autoCrop={autoCrop}
+            onLabelSizeChange={setLabelSize}
+            onFitModeChange={setFitMode}
+            onAutoCropChange={setAutoCrop}
+            onReset={handleResetSettings}
+          />
+
+          <div className="btn-row">
+            <button
+              className="btn btn-primary"
+              disabled={!file1 || isProcessing}
+              onClick={handleResize}
+            >
+              {isProcessing ? "Processing…" : "Resize & Preview"}
+            </button>
+            {pdfBlobUrl && (
+              <>
+                <button className="btn btn-success" onClick={handleDownload}>
+                  ⬇ Download
+                </button>
+                <button className="btn btn-primary" onClick={handlePrint}>
+                  🖨 Print
+                </button>
+              </>
+            )}
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="pdf-actions">
+            <button
+              type="button"
+              className={`pdf-action-btn ${pdfAction === "merge" ? "active" : ""}`}
+              onClick={() => setPdfAction("merge")}
+            >
+              Merge PDFs
+            </button>
+            <button
+              type="button"
+              className={`pdf-action-btn ${pdfAction === "select" ? "active" : ""}`}
+              onClick={() => setPdfAction("select")}
+            >
+              Select Pages
+            </button>
+          </div>
+
+          {pdfAction === "merge" ? (
+            <div className="pdf-panel">
+              <PdfDropZone
+                label="Merge Source PDFs"
+                files={mergeFiles}
+                multiple
+                onFilesChange={setMergeFiles}
+                onClear={() => setMergeFiles([])}
+              />
+              {mergeFiles.length > 0 && (
+                <ul className="pdf-file-list">
+                  {mergeFiles.map((file, idx) => (
+                    <li key={`${file.name}-${idx}`}>{file.name}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ) : (
+            <div className="pdf-panel">
+              <PdfDropZone
+                label="PDF for Page Selection"
+                files={selectFile ? [selectFile] : []}
+                onFilesChange={(files) => {
+                  void handleSelectFile(files[0] ?? null);
+                }}
+                onClear={() => {
+                  void handleSelectFile(null);
+                }}
+              />
+              {selectFile && (
+                <div className="pdf-file-meta">{selectFile.name}</div>
+              )}
+              {selectFilePageCount && (
+                <div className="pdf-file-meta">{selectFilePageCount} pages available</div>
+              )}
+
+              <PdfPageSelector
+                file={selectFile}
+                selectedPages={selectedPdfPages}
+                onChange={setSelectedPdfPages}
+              />
+            </div>
+          )}
+
+          <div className="btn-row">
+            <button
+              className="btn btn-primary"
+              disabled={isProcessing}
+              onClick={handleModifyPdf}
+            >
+              {isProcessing ? "Processing…" : "Generate PDF"}
+            </button>
+            {pdfBlobUrl && (
+              <button className="btn btn-success" onClick={handleDownload}>
+                ⬇ Download
+              </button>
+            )}
+          </div>
+        </>
+      )}
 
       {pdfBlobUrl && <OutputPreview blobUrl={pdfBlobUrl} />}
 
@@ -192,7 +388,7 @@ export default function App() {
         </div>
       )}
 
-      {cropSlot && (cropSlot === 1 ? file1 : file2) && (
+      {mode === "shipping" && cropSlot && (cropSlot === 1 ? file1 : file2) && (
         <CropRotateModal
           file={(cropSlot === 1 ? file1 : file2)!}
           aspectRatio={cropAspectRatio}

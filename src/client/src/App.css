@@ -27,6 +27,34 @@ h1 {
     margin-bottom: 1.5rem;
 }
 
+.mode-menu {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    margin: 0 0 0.75rem;
+}
+
+.mode-btn {
+    border: 1px solid #bfdbfe;
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-weight: 600;
+    border-radius: 2px;
+    padding: 0.6rem 0.75rem;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.mode-btn:hover {
+    background: #dbeafe;
+}
+
+.mode-btn.active {
+    background: #2563eb;
+    color: #fff;
+    border-color: #2563eb;
+}
+
 /* Drop zones — side by side */
 .drop-zones {
     display: flex;
@@ -38,7 +66,7 @@ h1 {
     flex: 1;
     position: relative;
     border: 2px dashed #93c5fd;
-    border-radius: 12px;
+    border-radius: 2px;
     background: #fff;
     padding: 1.5rem 0.75rem;
     text-align: center;
@@ -90,7 +118,7 @@ h1 {
 .preview-thumb {
     max-width: 100%;
     max-height: 100px;
-    border-radius: 6px;
+    border-radius: 2px;
     margin-top: 0.5rem;
     box-shadow: 0 1px 4px rgba(0,0,0,0.1);
 }
@@ -102,7 +130,7 @@ h1 {
     right: 6px;
     width: 24px;
     height: 24px;
-    border-radius: 50%;
+    border-radius: 2px;
     border: none;
     background: #ef4444;
     color: #fff;
@@ -119,11 +147,173 @@ h1 {
 
 .drop-zone.has-file .clear-btn { display: block; }
 
+.pdf-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.6rem;
+}
+
+.pdf-action-btn {
+    flex: 1;
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    color: #334155;
+    border-radius: 2px;
+    padding: 0.55rem 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.pdf-action-btn.active {
+    background: #0ea5e9;
+    border-color: #0ea5e9;
+    color: #fff;
+}
+
+.pdf-panel {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 0.85rem;
+    margin-bottom: 0.75rem;
+}
+
+.pdf-file-label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 0.35rem;
+}
+
+.pdf-file-input,
+.pdf-pages-input {
+    width: 100%;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 0.5rem 0.65rem;
+    background: #fff;
+    margin-bottom: 0.55rem;
+    font-size: 0.9rem;
+}
+
+.pdf-file-list {
+    margin-left: 1rem;
+    color: #0f172a;
+    font-size: 0.85rem;
+}
+
+.pdf-file-meta {
+    font-size: 0.8rem;
+    color: #64748b;
+    margin: 0 0 0.5rem;
+}
+
+.pdf-page-selector {
+    border-top: 1px solid #e2e8f0;
+    margin-top: 0.5rem;
+    padding-top: 0.65rem;
+}
+
+.pdf-page-selector-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.4rem;
+    color: #334155;
+    font-size: 0.82rem;
+}
+
+.pdf-page-selector-actions {
+    display: flex;
+    gap: 0.4rem;
+    margin-bottom: 0.55rem;
+}
+
+.pdf-focused-preview {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 0.45rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 2px;
+    background: #f8fafc;
+    padding: 0.45rem;
+    margin-bottom: 0.55rem;
+}
+
+.pdf-focused-preview-body {
+    text-align: center;
+}
+
+.pdf-focused-preview-body img {
+    max-width: 100%;
+    height: 180px;
+    object-fit: contain;
+    border-radius: 2px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+}
+
+.pdf-focused-preview-meta {
+    margin-top: 0.35rem;
+    display: flex;
+    gap: 0.45rem;
+    align-items: center;
+    justify-content: center;
+}
+
+.pdf-selected-toggle {
+    background: #dcfce7;
+    border-color: #16a34a;
+    color: #166534;
+}
+
+.pdf-page-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    gap: 0.45rem;
+    max-height: 280px;
+    overflow: auto;
+    padding-right: 0.2rem;
+}
+
+.pdf-page-card {
+    border: 1px solid #cbd5e1;
+    background: #fff;
+    border-radius: 2px;
+    padding: 0.3rem;
+    cursor: pointer;
+    text-align: left;
+}
+
+.pdf-page-card img {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    object-fit: contain;
+    display: block;
+    background: #f8fafc;
+    border-radius: 2px;
+}
+
+.pdf-page-card-label {
+    margin-top: 0.2rem;
+    display: inline-block;
+    font-size: 0.72rem;
+    color: #334155;
+}
+
+.pdf-page-card.selected {
+    border-color: #16a34a;
+    box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.15);
+    background: #f0fdf4;
+}
+
 /* Page layout preview */
 .page-preview {
     background: #fff;
     border: 1px solid #e2e8f0;
-    border-radius: 6px;
+    border-radius: 2px;
     padding: 0.15rem;
     margin-bottom: 0.35rem;
     aspect-ratio: 11 / 8.5;
@@ -138,7 +328,7 @@ h1 {
     width: 100%;
     aspect-ratio: 4 / 6;
     border: 1px dashed #cbd5e1;
-    border-radius: 4px;
+    border-radius: 2px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -219,7 +409,7 @@ h1 {
     color: #64748b;
     background: #f1f5f9;
     border: 1px solid #e2e8f0;
-    border-radius: 6px;
+    border-radius: 2px;
     cursor: pointer;
     transition: all 0.15s;
 }
@@ -267,7 +457,7 @@ h1 {
     width: 100%;
     padding: 0.9rem;
     border: none;
-    border-radius: 12px;
+    border-radius: 2px;
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
@@ -328,17 +518,35 @@ h1 {
 .output-preview {
     background: #fff;
     border: 1px solid #e2e8f0;
-    border-radius: 8px;
+    border-radius: 2px;
     padding: 0.5rem;
     margin-bottom: 0.75rem;
     text-align: center;
+    min-height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .output-preview canvas {
     max-width: 100%;
     height: auto;
-    border-radius: 4px;
+    border-radius: 2px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.output-preview-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    margin-top: 0.45rem;
+}
+
+.output-preview-error {
+    text-align: center;
+    margin-top: -0.35rem;
+    margin-bottom: 0.5rem;
 }
 
 .spinner {
@@ -409,7 +617,7 @@ h1 {
 .page-btn {
     background: #f1f5f9;
     border: 1px solid #cbd5e1;
-    border-radius: 4px;
+    border-radius: 2px;
     color: #1e293b;
     font-weight: 600;
     padding: 0.25rem 0.5rem;
@@ -524,7 +732,7 @@ h1 {
 .btn-sm {
     padding: 0.4rem 0.8rem;
     font-size: 0.8rem;
-    border-radius: 8px;
+    border-radius: 2px;
     border: 1px solid #cbd5e1;
     background: #f1f5f9;
     color: #475569;

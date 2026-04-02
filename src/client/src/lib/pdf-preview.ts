@@ -3,6 +3,10 @@ import pdfjsWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
+function clonePdfData(data: ArrayBuffer): ArrayBuffer {
+  return data.slice(0);
+}
+
 interface RenderPdfToDataUrlOptions {
   pageNum?: number;
   maxDim?: number;
@@ -16,7 +20,12 @@ interface RenderPdfPageToCanvasOptions {
 /** Get total page count of a PDF File. */
 export async function getPdfPageCount(file: File): Promise<number> {
   const buf = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+  return getPdfPageCountFromData(buf);
+}
+
+/** Get total page count of a PDF ArrayBuffer. */
+export async function getPdfPageCountFromData(data: ArrayBuffer): Promise<number> {
+  const pdf = await pdfjsLib.getDocument({ data: clonePdfData(data) }).promise;
   return pdf.numPages;
 }
 
@@ -46,7 +55,7 @@ export async function renderPdfPageToCanvas(
   data: ArrayBuffer,
   { pageNum = 1, maxWidth = 520 }: RenderPdfPageToCanvasOptions = {},
 ): Promise<HTMLCanvasElement> {
-  const pdf = await pdfjsLib.getDocument({ data }).promise;
+  const pdf = await pdfjsLib.getDocument({ data: clonePdfData(data) }).promise;
   const page = await pdf.getPage(Math.max(1, Math.min(pageNum, pdf.numPages)));
   const vp = page.getViewport({ scale: 1 });
   const scale = Math.min(maxWidth / vp.width, 2);
