@@ -4,6 +4,7 @@ import type { CropRotateResult } from "../lib/image-edit";
 
 interface CropRotateModalProps {
   file: File;
+  aspectRatio?: number;
   onApply: (result: CropRotateResult) => void;
   onCancel: () => void;
 }
@@ -15,8 +16,110 @@ interface CropRect {
   h: number;
 }
 
+type ResizeHandle = "nw" | "ne" | "sw" | "se";
+
+interface InteractionState {
+  mode: "create" | "move" | "resize";
+  start: { x: number; y: number };
+  startCrop: CropRect | null;
+  handle?: ResizeHandle;
+}
+
+const MIN_CROP_SIZE = 12;
+const HANDLE_RADIUS = 12;
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+function normalizeRect(rect: CropRect): CropRect {
+  const x2 = rect.x + rect.w;
+  const y2 = rect.y + rect.h;
+  return {
+    x: Math.min(rect.x, x2),
+    y: Math.min(rect.y, y2),
+    w: Math.abs(rect.w),
+    h: Math.abs(rect.h),
+  };
+}
+
+function findResizeHandle(pt: { x: number; y: number }, rect: CropRect): ResizeHandle | null {
+  const corners: Array<{ name: ResizeHandle; x: number; y: number }> = [
+    { name: "nw", x: rect.x, y: rect.y },
+    { name: "ne", x: rect.x + rect.w, y: rect.y },
+    { name: "sw", x: rect.x, y: rect.y + rect.h },
+    { name: "se", x: rect.x + rect.w, y: rect.y + rect.h },
+  ];
+
+  for (const corner of corners) {
+    const dx = pt.x - corner.x;
+    const dy = pt.y - corner.y;
+    if (Math.hypot(dx, dy) <= HANDLE_RADIUS) {
+      return corner.name;
+    }
+  }
+
+  return null;
+}
+
+function isInsideRect(pt: { x: number; y: number }, rect: CropRect): boolean {
+  return (
+    pt.x >= rect.x &&
+    pt.x <= rect.x + rect.w &&
+    pt.y >= rect.y &&
+    pt.y <= rect.y + rect.h
+  );
+}
+
+function rectFromAnchor(
+  anchor: { x: number; y: number },
+  pt: { x: number; y: number },
+  bounds: { w: number; h: number },
+  aspectRatio: number | null,
+  minSize = 0,
+): CropRect {
+  const clampedX = clamp(pt.x, 0, bounds.w);
+  const clampedY = clamp(pt.y, 0, bounds.h);
+  const dx = clampedX - anchor.x;
+  const dy = clampedY - anchor.y;
+  const sx = dx >= 0 ? 1 : -1;
+  const sy = dy >= 0 ? 1 : -1;
+
+  const maxW = sx > 0 ? bounds.w - anchor.x : anchor.x;
+  const maxH = sy > 0 ? bounds.h - anchor.y : anchor.y;
+
+  if (!aspectRatio || !Number.isFinite(aspectRatio) || aspectRatio <= 0) {
+    const w = clamp(Math.abs(dx), minSize, maxW);
+    const h = clamp(Math.abs(dy), minSize, maxH);
+    const x = sx > 0 ? anchor.x : anchor.x - w;
+    const y = sy > 0 ? anchor.y : anchor.y - h;
+    return normalizeRect({ x, y, w, h });
+  }
+
+  const ratio = aspectRatio;
+  const rawW = Math.abs(dx);
+  const rawH = Math.abs(dy);
+
+  const minWFromHeight = minSize * ratio;
+  const minW = Math.max(minSize, minWFromHeight);
+  const maxAllowedW = Math.min(maxW, maxH * ratio);
+
+  let desiredW = rawW;
+  if (rawH > 0 && rawW / rawH < ratio) {
+    desiredW = rawH * ratio;
+  }
+
+  const w = clamp(desiredW, minW, Math.max(minW, maxAllowedW));
+  const h = w / ratio;
+  const x = sx > 0 ? anchor.x : anchor.x - w;
+  const y = sy > 0 ? anchor.y : anchor.y - h;
+
+  return normalizeRect({ x, y, w, h });
+}
+
 export default function CropRotateModal({
   file,
+  aspectRatio,
   onApply,
   onCancel,
 }: CropRotateModalProps) {
@@ -25,7 +128,7 @@ export default function CropRotateModal({
   const [rotation, setRotation] = useState(0);
   const [crop, setCrop] = useState<CropRect | null>(null);
   const [dragging, setDragging] = useState(false);
-  const dragStart = useRef<{ x: number; y: number } | null>(null);
+  const interactionRef = useRef<InteractionState | null>(null);
   const [canvasSize, setCanvasSize] = useState({ w: 0, h: 0 });
 
   // Load image from the original file
@@ -119,13 +222,30 @@ export default function CropRotateModal({
         ctx.setLineDash([6, 3]);
         ctx.strokeRect(cropRect.x, cropRect.y, cropRect.w, cropRect.h);
         ctx.setLineDash([]);
+
+        const corners = [
+          { x: cropRect.x, y: cropRect.y },
+          { x: cropRect.x + cropRect.w, y: cropRect.y },
+          { x: cropRect.x, y: cropRect.y + cropRect.h },
+          { x: cropRect.x + cropRect.w, y: cropRect.y + cropRect.h },
+        ];
+
+        for (const corner of corners) {
+          ctx.beginPath();
+          ctx.fillStyle = "#fff";
+          ctx.strokeStyle = "#2563eb";
+          ctx.lineWidth = 2;
+          ctx.arc(corner.x, corner.y, 6, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        }
       }
     },
     [],
   );
 
   const getCanvasPoint = useCallback(
-    (e: React.MouseEvent<HTMLCanvasElement>) => {
+    (e: React.PointerEvent<HTMLCanvasElement>) => {
       const canvas = canvasRef.current!;
       const rect = canvas.getBoundingClientRect();
       const scaleX = canvas.width / rect.width;
@@ -138,32 +258,117 @@ export default function CropRotateModal({
     [],
   );
 
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent<HTMLCanvasElement>) => {
+      e.preventDefault();
       const pt = getCanvasPoint(e);
-      dragStart.current = pt;
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      if (crop) {
+        const handle = findResizeHandle(pt, crop);
+        if (handle) {
+          interactionRef.current = {
+            mode: "resize",
+            start: pt,
+            startCrop: crop,
+            handle,
+          };
+        } else if (isInsideRect(pt, crop)) {
+          interactionRef.current = {
+            mode: "move",
+            start: pt,
+            startCrop: crop,
+          };
+        } else {
+          interactionRef.current = {
+            mode: "create",
+            start: pt,
+            startCrop: null,
+          };
+          setCrop({ x: pt.x, y: pt.y, w: 0, h: 0 });
+        }
+      } else {
+        interactionRef.current = {
+          mode: "create",
+          start: pt,
+          startCrop: null,
+        };
+        setCrop({ x: pt.x, y: pt.y, w: 0, h: 0 });
+      }
+
+      canvas.setPointerCapture(e.pointerId);
       setDragging(true);
-      setCrop(null);
     },
-    [getCanvasPoint],
+    [getCanvasPoint, crop],
   );
 
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent<HTMLCanvasElement>) => {
-      if (!dragging || !dragStart.current) return;
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent<HTMLCanvasElement>) => {
+      if (!dragging || !interactionRef.current) return;
+
+      e.preventDefault();
       const pt = getCanvasPoint(e);
-      const x = Math.min(dragStart.current.x, pt.x);
-      const y = Math.min(dragStart.current.y, pt.y);
-      const w = Math.abs(pt.x - dragStart.current.x);
-      const h = Math.abs(pt.y - dragStart.current.y);
-      setCrop({ x, y, w, h });
+
+      const interaction = interactionRef.current;
+
+      const constrainedRatio = aspectRatio ?? null;
+
+      if (interaction.mode === "create") {
+        setCrop(rectFromAnchor(interaction.start, pt, canvasSize, constrainedRatio));
+        return;
+      }
+
+      if (!interaction.startCrop) return;
+
+      if (interaction.mode === "move") {
+        const dx = pt.x - interaction.start.x;
+        const dy = pt.y - interaction.start.y;
+        const nextX = clamp(interaction.startCrop.x + dx, 0, canvasSize.w - interaction.startCrop.w);
+        const nextY = clamp(interaction.startCrop.y + dy, 0, canvasSize.h - interaction.startCrop.h);
+        setCrop({
+          x: nextX,
+          y: nextY,
+          w: interaction.startCrop.w,
+          h: interaction.startCrop.h,
+        });
+        return;
+      }
+
+      if (interaction.mode === "resize" && interaction.handle) {
+        const left = interaction.startCrop.x;
+        const top = interaction.startCrop.y;
+        const right = interaction.startCrop.x + interaction.startCrop.w;
+        const bottom = interaction.startCrop.y + interaction.startCrop.h;
+
+        const anchorByHandle: Record<ResizeHandle, { x: number; y: number }> = {
+          nw: { x: right, y: bottom },
+          ne: { x: left, y: bottom },
+          sw: { x: right, y: top },
+          se: { x: left, y: top },
+        };
+
+        const anchor = anchorByHandle[interaction.handle];
+        setCrop(rectFromAnchor(anchor, pt, canvasSize, constrainedRatio, MIN_CROP_SIZE));
+      }
     },
-    [dragging, getCanvasPoint],
+    [dragging, getCanvasPoint, canvasSize, aspectRatio],
   );
 
-  const handleMouseUp = useCallback(() => {
+  const handlePointerUp = useCallback(
+    (e: React.PointerEvent<HTMLCanvasElement>) => {
+      if (canvasRef.current?.hasPointerCapture(e.pointerId)) {
+        canvasRef.current.releasePointerCapture(e.pointerId);
+      }
+      interactionRef.current = null;
+      setDragging(false);
+    },
+    [],
+  );
+
+  const handlePointerCancel = useCallback(() => {
+    interactionRef.current = null;
     setDragging(false);
-    dragStart.current = null;
   }, []);
 
   const handleRotate = useCallback(
@@ -215,15 +420,17 @@ export default function CropRotateModal({
           <canvas
             ref={canvasRef}
             className="crop-modal-canvas"
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerCancel}
+            onPointerLeave={handlePointerCancel}
           />
         </div>
 
         <div className="crop-modal-hint">
-          Click and drag on the image to select a crop area
+          Drag to create a crop. Drag corner handles to resize, or drag inside to move.
+          {aspectRatio ? " Crop ratio is locked to the selected label size." : ""}
         </div>
 
         <div className="crop-modal-toolbar">

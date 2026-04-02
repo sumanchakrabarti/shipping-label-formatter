@@ -25,6 +25,12 @@ export default function App() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [cropSlot, setCropSlot] = useState<1 | 2 | null>(null);
 
+  const cropAspectRatio = (() => {
+    const [w, h] = labelSize.split("x").map(Number);
+    if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) return undefined;
+    return w / h;
+  })();
+
   const handleResize = useCallback(async () => {
     if (!file1) return;
 
@@ -189,6 +195,7 @@ export default function App() {
       {cropSlot && (cropSlot === 1 ? file1 : file2) && (
         <CropRotateModal
           file={(cropSlot === 1 ? file1 : file2)!}
+          aspectRatio={cropAspectRatio}
           onApply={handleCropApply}
           onCancel={handleCropCancel}
         />
