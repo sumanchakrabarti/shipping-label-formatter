@@ -43,6 +43,24 @@ $url = "https://shipping-label-tool-hfetezcvckaghmdy.westus3-01.azurewebsites.ne
 Invoke-WebRequest -Uri $url -UseBasicParsing | Select-Object StatusCode
 ```
 
+## GitHub CI/CD (Automatic Deploy on Check-In)
+
+This repository includes a GitHub Actions workflow at `.github/workflows/azure-cicd.yml`.
+
+- On every push to `main`, it runs:
+  1. `yarn install --frozen-lockfile`
+  2. `yarn typecheck`
+  3. `yarn build`
+  4. Azure App Service deployment
+- You can also run it manually with **Run workflow** (workflow_dispatch).
+
+### Required GitHub Secret
+
+Add this repository secret before using the pipeline:
+
+- `AZURE_WEBAPP_PUBLISH_PROFILE`: publish profile XML from Azure App Service  
+  (Azure Portal → App Service → Overview → **Get publish profile**)
+
 ## What Gets Deployed
 
 From `C:\git\shipping-label-formatter\src`:
